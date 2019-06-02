@@ -38,8 +38,8 @@ maksymalnie3F(G) :- skierowaneF(G, X), sort(X, Y), flatten(Y, Z), msort(Z, A), w
 
 jestEFGrafem([]) .
 jestEFGrafem(G) :- 
-    uzywaIstniejacych(G), 
     unikalne(G, []),
+    uzywaIstniejacych(G), 
     poprawneF(G) .
 
 % zip(1, [1,2,3], X)
@@ -53,13 +53,13 @@ wszystkieKombinacje([], _, []) .
 wszystkieKombinacje([El|L1], L2, [Z|R]) :- zip(El, L2, Z), wszystkieKombinacje(L1, L2, R) .
 
 % wchodzi(+G, +Do, -Lista wierzchołków mających E-krawędź ->Do)
-wchodzi([], _, []) .
-wchodzi([NZ|Ns], NDo, [NZ|R]) :- 
+wchodzace([], _, []) .
+wchodzace([NZ|Ns], NDo, [NZ|R]) :- 
     NZ = node(_, Es, _), 
     NDo = node(Do, _, _), 
-    wchodzi(Ns, NDo, R), 
+    wchodzace(Ns, NDo, R), 
     member(Do, Es) .
-wchodzi([_|Ns], NDo, R) :- wchodzi(Ns, NDo, R) .
+wchodzace([_|Ns], NDo, R) :- wchodzace(Ns, NDo, R) .
 
 
 % nieWchodzi(G, do)
@@ -114,4 +114,43 @@ jestDobrzeUlozony(G) :-
     potencjalneVE(G, [_|[]]),
     ulozony(G) .
 
-  
+
+paryEF1(_, node(_, Es, Fs), R) :- 
+    wszystkieKombinacje(Es, Fs, R) .
+    
+sprawdzIstnienie1(_, V1, W1) :-
+    V1 = node(_, _, V1Fs),
+    W1 = node(_, W1Es, _),
+    PotencjalneU1 = W1Es,
+    PotencjalneU2 = V1Fs,
+    intersection(PotencjalneU1, PotencjalneU2, X),
+    X \= [] .
+
+paryEF2(G, NV, R) :- 
+    NV = node(_, _, Fs),
+    wchodzace(G, NV, DoV),
+    wszystkieKombinacje(Fs, DoV, R) .
+
+sprawdzIstnienie2(G, V1, W1) :-
+    V1 = node(_, _, V1Fs),
+    PotencjalneU1 = V1Fs,
+    wchodzace(G, W1, PotencjalneU2),
+    intersection(PotencjalneU1, PotencjalneU2, X),
+    X \= [] .
+
+znajdzDobraPare1(G, Node, [[E, F]|Pary]) :-
+    (   sprawdzIstnienie1(G, E, F) ; znajdzDobraPare1(G, Node, Pary) ) .
+
+znajdzDobraPare2(G, Node, [[E, F]|Pary]) :-
+    (   sprawdzIstnienie2(G, E, F) ; znajdzDobraPare2(G, Node, Pary) ) .
+
+% TODO vs, ve
+jestDobrzePermutujacy(G) :- jestDobrzeUlozony(G), jestDobrzePermutujacy(G, G) .
+jestDobrzePermutujacy(G, [N|Ns]) :-
+    jestDobrzePermutujacy(G, Ns),
+    paryEF1(G, N, Pary1),
+    paryEF2(G, N, Pary2),
+    znajdzDobraPare1(G, N, Pary1),
+    znajdzDobraPare2(G, N, Pary2) .
+
+
