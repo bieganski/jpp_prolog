@@ -50,12 +50,12 @@ zip(El, [X|XS], [[El, X]|R]) :- zip(El, XS, R) .
 % wszystkieKombinacje([1,2,3], [4,5], X)
 % X = [[[1, 4], [1, 5]], [[2, 4], [2, 5]], [[3, 4], [3, 5]]]
 wszystkieKombinacje([], _, []) .
-wszystkieKombinacje([El|L1], L2, [Z|R]) :- zip(El, L2, Z), wszystkieKombinacje(L1, L2, R) .
+wszystkieKombinacje([El|L1], L2, Wyn) :- zip(El, L2, Z), wszystkieKombinacje(L1, L2, R), append(Z, R, Wyn).
 
-% wchodzi(+G, +Do, -Lista wierzchołków mających E-krawędź ->Do)
+% wchodzi(+G, +Do, -Lista TERMÓW mających E-krawędź ->Do)
 wchodzace([], _, []) .
-wchodzace([NZ|Ns], NDo, [NZ|R]) :- 
-    NZ = node(_, Es, _), 
+wchodzace([N|Ns], NDo, [NTerm|R]) :- 
+    N = node(NTerm, Es, _), 
     NDo = node(Do, _, _), 
     wchodzace(Ns, NDo, R), 
     member(Do, Es) .
@@ -84,6 +84,14 @@ znajdzNode([N|_], Term, N) :- N = node(Term, _, _) .
 znajdzNode([_|Ns], Term, N) :- znajdzNode(Ns, Term, N) .
 
 
+osiagalny(G, X, Y) :- osiagalny(G, X, Y, []) .
+osiagalny(_, S, S, _) . 
+osiagalny(G, node(St, [Neigh|Neighs], Fs), E, Odw) :- 
+    znajdzNode(G, Neigh, NeighNode),
+    (   member(Neigh, Odw) ->  (   osiagalny(G, node(St, Neighs, Fs), E, Odw)   ) 
+                                ; (   osiagalny(G, node(St, Neighs, Fs), E, Odw) 
+                                        ; osiagalny(G, NeighNode, E, [Neigh|Odw])) ) .
+
 % paryBezPowtorzen(V, V, X), length(X, Binom(|V|, 2))
 % same_length(arg1, arg2)
 paryBezPowtorzen([], [], []) .
@@ -96,16 +104,7 @@ sprawdzPary(G, [P|Pary]) :-
     sprawdzPary(G, Pary) .
 
 ulozony(G) :- paryBezPowtorzen(G, G, R), sprawdzPary(G, R) .
-    
-
-osiagalny(G, X, Y) :- osiagalny(G, X, Y, []) .
-osiagalny(_, S, S, _) . 
-osiagalny(G, node(St, [Neigh|Neighs], Fs), E, Odw) :- 
-    znajdzNode(G, Neigh, NeighNode),
-    (   member(Neigh, Odw) ->  (   osiagalny(G, node(St, Neighs, Fs), E, Odw)   ) 
-                                ; (   osiagalny(G, node(St, Neighs, Fs), E, Odw) 
-                                        ; osiagalny(G, NeighNode, E, [Neigh|Odw])) ) .
-
+   
 
 jestDobrzeUlozony(G) :- 
     length(G, X), X >= 2,
@@ -116,41 +115,46 @@ jestDobrzeUlozony(G) :-
 
 
 paryEF1(_, node(_, Es, Fs), R) :- 
+    % write('lol'), write(Es), write(Fs), nl,
     wszystkieKombinacje(Es, Fs, R) .
     
-sprawdzIstnienie1(_, V1, W1) :-
-    V1 = node(_, _, V1Fs),
-    W1 = node(_, W1Es, _),
+sprawdzIstnienie1(G, V1, W1) :-
+    znajdzNode(G, V1,  node(_, _, V1Fs)),
+    znajdzNode(G, W1,  node(_, W1Es, _)),
     PotencjalneU1 = W1Es,
     PotencjalneU2 = V1Fs,
+    % write(PotencjalneU1), nl,
+    % write(PotencjalneU2), nl,
     intersection(PotencjalneU1, PotencjalneU2, X),
+    % write(X), nl,
     X \= [] .
 
-paryEF2(G, NV, R) :- 
-    NV = node(_, _, Fs),
-    wchodzace(G, NV, DoV),
-    wszystkieKombinacje(Fs, DoV, R) .
+paryEF2(G, V, R) :- 
+    V = node(_, _, Fs),
+    wchodzace(G, V, DoV),
+    wszystkieKombinacje(DoV, Fs, R) .
 
 sprawdzIstnienie2(G, V1, W1) :-
-    V1 = node(_, _, V1Fs),
+    znajdzNode(G, V1,  node(_, _, V1Fs)),
     PotencjalneU1 = V1Fs,
     wchodzace(G, W1, PotencjalneU2),
     intersection(PotencjalneU1, PotencjalneU2, X),
     X \= [] .
 
-znajdzDobraPare1(G, Node, [[E, F]|Pary]) :-
-    (   sprawdzIstnienie1(G, E, F) ; znajdzDobraPare1(G, Node, Pary) ) .
+znajdzDobraPare1(_, _, []) .
+znajdzDobraPare1(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie1(G, E, F), znajdzDobraPare1(G, Node, Pary) .
 
-znajdzDobraPare2(G, Node, [[E, F]|Pary]) :-
-    (   sprawdzIstnienie2(G, E, F) ; znajdzDobraPare2(G, Node, Pary) ) .
+znajdzDobraPare2(_, _, []) .
+znajdzDobraPare2(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie2(G, E, F), znajdzDobraPare2(G, Node, Pary) .
 
-% TODO vs, ve
-jestDobrzePermutujacy(G) :- jestDobrzeUlozony(G), jestDobrzePermutujacy(G, G) .
+% TODO vs, ve, ,, , ,,jestDobrzeUlozony(G), 
+jestDobrzePermutujacy(G) :- jestDobrzePermutujacy(G, G) .
+jestDobrzePermutujacy(_, []) .
 jestDobrzePermutujacy(G, [N|Ns]) :-
     jestDobrzePermutujacy(G, Ns),
     paryEF1(G, N, Pary1),
     paryEF2(G, N, Pary2),
     znajdzDobraPare1(G, N, Pary1),
     znajdzDobraPare2(G, N, Pary2) .
-
+    
 
