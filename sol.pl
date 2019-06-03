@@ -114,9 +114,10 @@ jestDobrzeUlozony(G) :-
     ulozony(G) .
 
 
-paryEF1(_, node(_, Es, Fs), R) :- 
+paryEF1(_, _, E, node(_, Es, Fs), R) :- 
     % write('lol'), write(Es), write(Fs), nl,
-    wszystkieKombinacje(Es, Fs, R) .
+    delete(Fs, E, NotEndFs), 
+    wszystkieKombinacje(Es, NotEndFs, R) .
     
 sprawdzIstnienie1(G, V1, W1) :-
     znajdzNode(G, V1,  node(_, _, V1Fs)),
@@ -129,10 +130,11 @@ sprawdzIstnienie1(G, V1, W1) :-
     % write(X), nl,
     X \= [] .
 
-paryEF2(G, V, R) :- 
+paryEF2(G, S, _, V, R) :- 
     V = node(_, _, Fs),
+    delete(Fs, S, NoStartFs),
     wchodzace(G, V, DoV),
-    wszystkieKombinacje(DoV, Fs, R) .
+    wszystkieKombinacje(DoV, NoStartFs, R) .
 
 sprawdzIstnienie2(G, V1, W1) :-
     znajdzNode(G, V1,  node(_, _, V1Fs)),
@@ -147,14 +149,24 @@ znajdzDobraPare1(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie1(G, E, F), znajdzDo
 znajdzDobraPare2(_, _, []) .
 znajdzDobraPare2(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie2(G, E, F), znajdzDobraPare2(G, Node, Pary) .
 
-% TODO vs, ve, ,, , ,,jestDobrzeUlozony(G), 
-jestDobrzePermutujacy(G) :- jestDobrzePermutujacy(G, G) .
-jestDobrzePermutujacy(_, []) .
-jestDobrzePermutujacy(G, [N|Ns]) :-
-    jestDobrzePermutujacy(G, Ns),
-    paryEF1(G, N, Pary1),
-    paryEF2(G, N, Pary2),
+
+jestDobrzePermutujacy(G) :- 
+    jestDobrzeUlozony(G), 
+    potencjalneVS(G, [S]),
+    potencjalneVE(G, [E]),
+    jestDobrzePermutujacy(G, G, S, E) .
+jestDobrzePermutujacy(_, [], _, _) .
+jestDobrzePermutujacy(G, [N|Ns], S, E) :-
+    jestDobrzePermutujacy(G, Ns, S, E),
+    paryEF1(G, S, E, N, Pary1),
+    paryEF2(G, S, E, N, Pary2),
     znajdzDobraPare1(G, N, Pary1),
     znajdzDobraPare2(G, N, Pary2) .
-    
+
+jestSucc(_, [], _) .
+jestSucc(G, [Poprz|Ps], [Nast|Ns]) :- 
+    jestSucc(G, Ps, Ns),
+    znajdzNode(G, Poprz, node(_, Es, _)),
+    member(Nast, Es) .
+
 
