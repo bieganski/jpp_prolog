@@ -39,12 +39,17 @@ maksymalnie6Kazdego([Y|YS], _, _) :- maksymalnie6Kazdego(YS, Y, 1) .
 
 maksymalnie3F(G) :- skierowaneF(G, X), sort(X, Y), flatten(Y, Z), msort(Z, A), maksymalnie6Kazdego(A) .
 
+usunPowtorzenia([],[]) .
+usunPowtorzenia([node(V, Es, Fs)|Ns], [R|NNs]) :- 
+    usunPowtorzenia(Ns, NNs), sort(Es, EEs), sort(Fs, FFs),
+    R = node(V, EEs, FFs) .
 
 jestEFGrafem([]) .
-jestEFGrafem(G) :- 
-    unikalne(G, []),
-    uzywaIstniejacych(G), 
-    poprawneF(G) .
+jestEFGrafem(G) :-
+    usunPowtorzenia(G, GG),
+    unikalne(GG, []),
+    uzywaIstniejacych(GG), 
+    poprawneF(GG) .
 
 % zip(1, [1,2,3], X)
 % X = [[1, 1], [1, 2], [1, 3]]
@@ -110,12 +115,14 @@ sprawdzPary(G, [P|Pary]) :-
 ulozony(G) :- paryBezPowtorzen(G, G, R), sprawdzPary(G, R) .
    
 
-jestDobrzeUlozony(G) :- 
-    length(G, X), X >= 2,
-    maksymalnie3F(G),
-    potencjalneVS(G, [_|[]]),
-    potencjalneVE(G, [_|[]]),
-    ulozony(G) .
+jestDobrzeUlozony(G) :-
+    usunPowtorzenia(G, GG),
+    jestEFGrafem(GG),
+    length(GG, X), X >= 2,
+    maksymalnie3F(GG),
+    potencjalneVS(GG, [_|[]]),
+    potencjalneVE(GG, [_|[]]),
+    ulozony(GG) .
 
 
 paryEF1(_, _, E, node(_, Es, Fs), R) :- 
@@ -127,10 +134,7 @@ sprawdzIstnienie1(G, V1, W1) :-
     znajdzNode(G, W1,  node(_, W1Es, _)),
     PotencjalneU1 = W1Es,
     PotencjalneU2 = V1Fs,
-    % write(PotencjalneU1), nl,
-    % write(PotencjalneU2), nl,
     intersection(PotencjalneU1, PotencjalneU2, X),
-    % write(X), nl,
     X \= [] .
 
 paryEF2(G, S, _, V, R) :- 
@@ -146,25 +150,29 @@ sprawdzIstnienie2(G, V1, W1) :-
     intersection(PotencjalneU1, PotencjalneU2, X),
     X \= [] .
 
-znajdzDobraPare1(_, _, []) .
-znajdzDobraPare1(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie1(G, E, F), znajdzDobraPare1(G, Node, Pary) .
+sprawdzKazdaPare1(_, _, []) .
+sprawdzKazdaPare1(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie1(G, E, F), sprawdzKazdaPare1(G, Node, Pary) .
 
-znajdzDobraPare2(_, _, []) .
-znajdzDobraPare2(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie2(G, E, F), znajdzDobraPare2(G, Node, Pary) .
+sprawdzKazdaPare2(_, _, []) .
+sprawdzKazdaPare2(G, Node, [[E, F]|Pary]) :- sprawdzIstnienie2(G, E, F), sprawdzKazdaPare2(G, Node, Pary) .
 
 
+% "pary EF" odpowiadają liście par postaci [v1, w1] z polecenia, 
+% dla każdej z nich musimy sprawdzić istnienie u
 jestDobrzePermutujacy(G) :- 
-    jestDobrzeUlozony(G), 
-    potencjalneVS(G, [S]),
-    potencjalneVE(G, [E]),
-    jestDobrzePermutujacy(G, G, S, E) .
+    usunPowtorzenia(G, GG),
+    jestDobrzeUlozony(GG), 
+    potencjalneVS(GG, [S]),
+    potencjalneVE(GG, [E]),
+    jestDobrzePermutujacy(GG, GG, S, E) .
 jestDobrzePermutujacy(_, [], _, _) .
 jestDobrzePermutujacy(G, [N|Ns], S, E) :-
     jestDobrzePermutujacy(G, Ns, S, E),
     paryEF1(G, S, E, N, Pary1),
     paryEF2(G, S, E, N, Pary2),
-    znajdzDobraPare1(G, N, Pary1),
-    znajdzDobraPare2(G, N, Pary2) .
+    sprawdzKazdaPare1(G, N, Pary1),
+    sprawdzKazdaPare2(G, N, Pary2) .
+
 
 jestSucc(_, [], _) .
 jestSucc(G, [Poprz|Ps], [Nast|Ns]) :- 
