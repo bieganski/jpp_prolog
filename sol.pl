@@ -1,5 +1,6 @@
 :- use_module(library(lists)) .
 
+% oblicza listę nazw wszystkich wierzchołków użytych w E i F krawędziach
 zsumujListy([], []) .
 zsumujListy([node(_, L1, L2)|Ns], R) :- append(L1, L2, R1), zsumujListy(Ns, R2), append(R1, R2, R) .
 
@@ -18,22 +19,25 @@ unikalne([V|Vs]) :- \+ member(V, Vs), unikalne(Vs) .
 
 % istniejaOdwrotne([v, e], [e, v])
 istniejaOdwrotne([]) .
+istniejaOdwrotne([[V, V]|Reszta]) :- istniejaOdwrotne(Reszta) .
 istniejaOdwrotne([[V, E]|Reszta]) :- 
     member([E, V], Reszta), 
     delete(Reszta, [E, V], Dobre),
     istniejaOdwrotne(Dobre) .
 
+% node(v, _, [v1,v2,v3], [[v,v1], [v,v2], [v,v3]])
 skierowaneF([], []) .
 skierowaneF([node(V, _, Fs)|Ns], R) :- zip(V, Fs, R1), skierowaneF(Ns, R2), append(R1, R2, R) .
 
 poprawneF(G) :- skierowaneF(G, X), sort(X, Y), istniejaOdwrotne(Y) .
 
+maksymalnie6Kazdego([]) .
 maksymalnie6Kazdego([X|XS]) :- maksymalnie6Kazdego(XS, X, 1) .
 maksymalnie6Kazdego([], _, _) .
 maksymalnie6Kazdego([X|XS], X, I) :- J is (I + 1), maksymalnie6Kazdego(XS, X, J) .
 maksymalnie6Kazdego([Y|YS], _, _) :- maksymalnie6Kazdego(YS, Y, 1) .
 
-maksymalnie3F(G) :- skierowaneF(G, X), sort(X, Y), flatten(Y, Z), msort(Z, A), write(A), maksymalnie6Kazdego(A) .
+maksymalnie3F(G) :- skierowaneF(G, X), sort(X, Y), flatten(Y, Z), msort(Z, A), maksymalnie6Kazdego(A) .
 
 
 jestEFGrafem([]) .
@@ -115,7 +119,6 @@ jestDobrzeUlozony(G) :-
 
 
 paryEF1(_, _, E, node(_, Es, Fs), R) :- 
-    % write('lol'), write(Es), write(Fs), nl,
     delete(Fs, E, NotEndFs), 
     wszystkieKombinacje(Es, NotEndFs, R) .
     
@@ -168,5 +171,6 @@ jestSucc(G, [Poprz|Ps], [Nast|Ns]) :-
     jestSucc(G, Ps, Ns),
     znajdzNode(G, Poprz, node(_, Es, _)),
     member(Nast, Es) .
+
 
 
