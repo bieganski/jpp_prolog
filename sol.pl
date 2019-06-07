@@ -29,7 +29,7 @@ istniejaOdwrotne([[V, E]|Reszta]) :-
 skierowaneF([], []) .
 skierowaneF([node(V, _, Fs)|Ns], R) :- zip(V, Fs, R1), skierowaneF(Ns, R2), append(R1, R2, R) .
 
-poprawneF(G) :- skierowaneF(G, X), sort(X, Y), istniejaOdwrotne(Y) .
+poprawneF(G) :- skierowaneF(G, X),istniejaOdwrotne(X) .
 
 maksymalnie6Kazdego([]) .
 maksymalnie6Kazdego([X|XS]) :- maksymalnie6Kazdego(XS, X, 1) .
@@ -179,6 +179,5 @@ jestSucc(G, [Poprz|Ps], [Nast|Ns]) :-
     jestSucc(G, Ps, Ns),
     znajdzNode(G, Poprz, node(_, Es, _)),
     member(Nast, Es) .
-
 
 
